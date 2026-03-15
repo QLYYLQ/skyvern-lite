@@ -1,24 +1,6 @@
 # skyvern-lite
 
-Lightweight Python SDK for the [Skyvern](https://github.com/Skyvern-AI/skyvern) API. Extracted from the official `skyvern` package to provide a minimal, dependency-light client.
-
-## Why?
-
-The official `skyvern` PyPI package pulls in a massive dependency tree — OpenAI, SQLAlchemy, Alembic, the full agent framework, and more. If you just want to:
-
-- Spin up a **cloud browser** and get a CDP (Chrome DevTools Protocol) URL
-- Run AI-powered browser tasks via the API
-- Manage workflows, credentials, and browser profiles
-
-...you don't need any of that. **skyvern-lite** gives you the complete Skyvern REST API with only two dependencies: `httpx` and `pydantic`.
-
-| | `skyvern` (official) | `skyvern-lite` |
-|--|---------------------|-----------------|
-| Dependencies | openai, sqlalchemy, alembic, playwright, litellm, ... | **httpx + pydantic** |
-| Install size | Hundreds of MB | A few MB |
-| Requires DB setup | Yes (PostgreSQL) | No |
-| Requires local server | Yes (for `Skyvern.local()`) | No |
-| Full API access | Yes | Yes |
+Minimal Python SDK for [Skyvern](https://www.skyvern.com/) cloud browser sessions. Only does one thing: **create a cloud browser, return a CDP URL, clean up when done**.
 
 ## Install
 
@@ -26,139 +8,139 @@ The official `skyvern` PyPI package pulls in a massive dependency tree — OpenA
 pip install skyvern-lite
 ```
 
-Or install from source:
-
-```bash
-git clone https://github.com/QLYYLQ/skyvern-lite.git
-cd skyvern-lite
-pip install -e .
-```
-
 ## Quick Start
 
-### Get a cloud browser CDP URL
-
 ```python
-from skyvern_client import Skyvern
+from skyvern_client import SkyvernCloud
 
-client = Skyvern(api_key="your-api-key")
+client = SkyvernCloud(api_key="your-api-key")  # or set SKYVERN_API_KEY env var
 
 # Create a cloud browser session
-session = client.create_browser_session(timeout=60)
-print(session.browser_address)  # wss://... CDP WebSocket URL
+session = client.sessions.create()
+print(session.cdp_url)      # wss://sessions.skyvern.com/...
+print(session.session_id)   # pbs_...
 
-# Connect with playwright (or any CDP client)
+# Connect with Playwright
+# NOTE: Skyvern's CDP WebSocket requires x-api-key header for auth
 from playwright.sync_api import sync_playwright
 
-with sync_playwright() as p:
-    browser = p.chromium.connect_over_cdp(
-        session.browser_address,
+with sync_playwright() as pw:
+    browser = pw.chromium.connect_over_cdp(
+        session.cdp_url,
         headers={"x-api-key": "your-api-key"},
     )
-    page = browser.contexts[0].pages[0]
+    page = browser.contexts[0].new_page()
     page.goto("https://example.com")
-    page.screenshot(path="screenshot.png")
-    browser.close()
+    print(page.title())
 
 # Clean up
-client.close_browser_session(session.browser_session_id)
+client.sessions.delete(session.session_id)
 ```
 
-### Async version
+### Context Manager (auto-cleanup)
 
 ```python
-import asyncio
-from skyvern_client import AsyncSkyvern
-
-async def main():
-    client = AsyncSkyvern(api_key="your-api-key")
-    session = await client.create_browser_session(timeout=60)
-    print(session.browser_address)
-    await client.close_browser_session(session.browser_session_id)
-
-asyncio.run(main())
+with client.sessions.create() as session:
+    # use session.cdp_url ...
+    pass
+# session automatically deleted on exit
 ```
 
-### Run an AI task
+### Async
 
 ```python
-client = Skyvern(api_key="your-api-key")
+from skyvern_client import AsyncSkyvernCloud
 
-# Create a browser session first
-session = client.create_browser_session()
-
-# Run an AI-powered task on it
-task = client.run_task(
-    prompt="Fill out the contact form and submit it",
-    url="https://example.com/contact",
-    browser_session_id=session.browser_session_id,
-)
-print(task.run_id, task.status)
+async with AsyncSkyvernCloud(api_key="your-api-key") as client:
+    session = await client.sessions.create()
+    print(session.cdp_url)
+    await client.sessions.delete(session.session_id)
 ```
 
-## API Reference
+## API
 
-Both `Skyvern` (sync) and `AsyncSkyvern` (async) expose identical methods:
-
-### Cloud Browser Sessions
-- `create_browser_session(timeout, proxy_location, extensions, browser_type)` — Create a cloud browser, returns CDP URL
-- `get_browser_sessions()` — List all active sessions
-- `get_browser_session(id)` — Get session details
-- `close_browser_session(id)` — Close a session
-
-### AI Task Execution
-- `run_task(prompt, url, ...)` — Run an AI browser task
-- `get_run(run_id)` — Get task run status
-- `cancel_run(run_id)` — Cancel a running task
-- `run_sdk_action(...)` — Execute a single AI action on a page
-- `login(credential_type, ...)` — AI-powered login
-
-### Workflows
-- `run_workflow(workflow_id, ...)` — Execute a workflow
-- `get_workflows()` / `get_workflow(id)` — Query workflows
-- `create_workflow()` / `update_workflow()` / `delete_workflow()` — Workflow CRUD
-- `get_workflow_runs(workflow_id)` — Execution history
-- `get_workflow_versions(workflow_id)` — Version history
-
-### Browser Profiles
-- `create_browser_profile(...)` — Create a browser profile (fingerprint/cookie persistence)
-- `list_browser_profiles()` — List profiles
-- `get_browser_profile(id)` / `delete_browser_profile(id)`
-
-### Credentials
-- `create_credential()` / `get_credentials()` / `update_credential()` / `delete_credential()`
-- `send_totp_code()` — Send TOTP verification code
-
-### Files & Artifacts
-- `upload_file()` / `download_files()`
-- `get_artifact(id)` / `get_run_artifacts(run_id)`
-- `get_run_timeline(run_id)`
-
-### Scripts
-- `create_script()` / `get_scripts()` / `get_script(id)` / `deploy_script()`
-
-## Configuration
+### Client
 
 ```python
-from skyvern_client import Skyvern
-from skyvern_client.environment import SkyvernEnvironment
+SkyvernCloud(api_key=None, *, base_url=None, timeout=60.0, max_retries=2)
+AsyncSkyvernCloud(api_key=None, *, base_url=None, timeout=60.0, max_retries=2)
+```
 
-# Skyvern Cloud (default)
-client = Skyvern(api_key="your-key")
+- `api_key` — defaults to `SKYVERN_API_KEY` env var
+- `base_url` — defaults to `https://api.skyvern.com`
 
-# Self-hosted
-client = Skyvern(
-    api_key="your-key",
-    base_url="http://your-server:8000",
+### Sessions (`client.sessions`)
+
+| Method | Description |
+|--------|-------------|
+| `create(**kwargs) -> SessionInfo` | Create cloud browser, returns CDP URL |
+| `get(session_id) -> SessionInfo` | Get session status |
+| `list(**filters) -> list[SessionInfo]` | List sessions |
+| `delete(session_id) -> None` | Close session (idempotent) |
+
+### `create()` Parameters
+
+```python
+session = client.sessions.create(
+    # Proxy — managed residential IP
+    proxy=ManagedProxyConfig(country="US"),
+
+    # Extensions
+    extensions=["ad-blocker", "captcha-solver"],
+
+    # Browser type
+    browser_type="chrome",   # or "msedge"
+
+    # Timeout
+    timeout=120,             # seconds, default 60
+
+    # Browser profile (must pre-exist)
+    browser_profile_id="bp_...",
 )
+```
 
-# Or use environment presets
-client = Skyvern(
-    api_key="your-key",
-    environment=SkyvernEnvironment.LOCAL,  # http://localhost:8000
-)
+### SessionInfo Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `session_id` | `str` | Unique identifier |
+| `cdp_url` | `str \| None` | CDP WebSocket URL (`wss://...`) |
+| `status` | `str` | `"active"`, `"closed"`, or `"error"` |
+| `created_at` | `datetime \| None` | Creation timestamp |
+| `inspect_url` | `str \| None` | Skyvern dashboard debug URL |
+| `metadata` | `dict` | Vendor-specific data |
+
+### Feature Support
+
+| Feature | Status | Usage |
+|---------|--------|-------|
+| Residential proxy (30+ countries) | Supported | `proxy=ManagedProxyConfig(country="US")` |
+| Ad blocker | Supported | `extensions=["ad-blocker"]` |
+| Captcha solver | Supported | `extensions=["captcha-solver"]` |
+| Browser type | Supported | `browser_type="chrome"` or `"msedge"` |
+| Custom timeout | Supported | `timeout=300` |
+| Custom proxy server | Not supported | `ProxyConfig()` raises `NotImplementedError` |
+| Browser fingerprint | Not supported | Skyvern API does not accept fingerprint params |
+
+### Exceptions
+
+```
+CloudBrowserError
+├── AuthenticationError     # 401/403
+├── QuotaExceededError      # 429 (has .retry_after)
+├── SessionNotFoundError    # 404
+├── ProviderError           # 5xx (has .status_code, .request_id)
+├── TimeoutError            # Operation timeout
+└── NetworkError            # Connection failure
+```
+
+### Backward Compatibility
+
+```python
+from skyvern_client import Skyvern       # alias for SkyvernCloud
+from skyvern_client import AsyncSkyvern  # alias for AsyncSkyvernCloud
 ```
 
 ## License
 
-This project extracts code from [Skyvern](https://github.com/Skyvern-AI/skyvern) (AGPL-3.0). The extracted client code was auto-generated by [Fern](https://buildwithfern.com/).
+MIT
