@@ -110,6 +110,29 @@ session = client.sessions.create(
 | `inspect_url` | `str \| None` | Skyvern dashboard debug URL |
 | `metadata` | `dict` | Vendor-specific data |
 
+### CDP WebSocket Authentication
+
+Skyvern's CDP WebSocket endpoint (`wss://sessions.skyvern.com/...`) is **not a standard open WebSocket**. It requires authentication via the `x-api-key` HTTP header during the WebSocket handshake. Without this header, the connection will fail with `401 Unauthorized`.
+
+```python
+# Playwright
+browser = pw.chromium.connect_over_cdp(
+    session.cdp_url,
+    headers={"x-api-key": api_key},  # REQUIRED
+)
+
+# Raw websockets library
+import websockets
+ws = await websockets.connect(
+    session.cdp_url,
+    additional_headers={"x-api-key": api_key},  # REQUIRED
+)
+
+# Selenium (does NOT support custom WebSocket headers — cannot connect directly)
+```
+
+> **If your CDP client does not support custom headers on WebSocket upgrade, you cannot connect to Skyvern cloud browsers directly.** Playwright and raw websockets libraries work. Selenium's CDP support does not.
+
 ### Feature Support
 
 | Feature | Status | Usage |
