@@ -55,10 +55,37 @@ Session CRUD (``client.sessions``)
 
 Vendor Parameters (pass via ``**vendor_params`` in ``create()``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- ``timeout: int``              — Session timeout in seconds
-- ``extensions: list``          — Browser extensions
-- ``browser_type: str``         — Browser type (e.g. "chromium")
-- ``browser_profile_id: str``   — Persistent browser profile ID
+- ``timeout: int``              — Session timeout in seconds (default: 60)
+- ``extensions: list[str]``     — Browser extensions. Valid values:
+                                  ``"ad-blocker"`` | ``"captcha-solver"``
+                                  Can combine: ``extensions=["ad-blocker", "captcha-solver"]``
+- ``browser_type: str``         — ``"chrome"`` (Chrome 145) or ``"msedge"`` (Edge 143)
+- ``browser_profile_id: str``   — Persistent browser profile ID (must be created from
+                                  an existing session via Skyvern dashboard)
+
+Example with all features::
+
+    session = client.sessions.create(
+        proxy=ManagedProxyConfig(country="US"),
+        extensions=["ad-blocker", "captcha-solver"],
+        browser_type="chrome",
+        timeout=120,
+    )
+
+Feature Support Matrix
+~~~~~~~~~~~~~~~~~~~~~~
+=========================  =========  ==================================================
+Feature                    Supported  Notes
+=========================  =========  ==================================================
+Residential proxy          Yes        30+ countries, real residential IPs
+Ad blocker extension       Yes        ``extensions=["ad-blocker"]``
+Captcha solver extension   Yes        ``extensions=["captcha-solver"]``
+Browser type selection     Yes        ``"chrome"`` or ``"msedge"``
+Custom session timeout     Yes        ``timeout=300`` (seconds)
+Browser fingerprint        No         Skyvern API does not accept fingerprint parameters
+Custom proxy server        No         Only managed proxies; ``ProxyConfig`` raises error
+Browser profile            Partial    Must pre-create from existing session
+=========================  =========  ==================================================
 
 SessionInfo Fields
 ~~~~~~~~~~~~~~~~~~
@@ -74,7 +101,9 @@ Proxy Configuration
 - ``ManagedProxyConfig(country="US")``       — Use Skyvern's managed residential proxy
 - ``ProxyConfig(server, username, password)`` — NOT supported (raises NotImplementedError)
 
-Supported proxy countries: US, GB, DE, FR, JP, CA, AU, BR, IN, KR, and 20+ more.
+Supported proxy countries (verified with real IP geolocation):
+US, GB, DE, FR, JP, CA, AU, BR, IN, KR, AT, BE, BG, CH, CZ, ES, FI, GR,
+IE, IL, IT, MX, NL, NO, PL, RO, RU, SE, SK, TR, ZA.
 
 CDP Authentication
 ~~~~~~~~~~~~~~~~~~
@@ -85,6 +114,13 @@ header. When connecting with Playwright::
         session.cdp_url,
         headers={"x-api-key": api_key},
     )
+
+CDP capabilities available after connection:
+- ``DOM.getDocument`` / ``DOM.querySelector`` / ``DOM.getOuterHTML`` — DOM tree
+- ``Accessibility.getFullAXTree`` — Accessibility tree
+- ``Page.captureScreenshot`` — Screenshots
+- ``Input.dispatchMouseEvent`` / ``Input.dispatchKeyEvent`` — Input simulation
+- All standard Chrome DevTools Protocol commands
 
 Exception Hierarchy
 ~~~~~~~~~~~~~~~~~~~
