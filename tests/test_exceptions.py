@@ -1,6 +1,6 @@
 """Tests for the exception hierarchy."""
 
-from skyvern_client.exceptions import (
+from skyvern_lite.exceptions import (
     AuthenticationError,
     CloudBrowserError,
     NetworkError,

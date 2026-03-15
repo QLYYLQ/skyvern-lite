@@ -11,7 +11,7 @@ pip install skyvern-lite
 ## Quick Start
 
 ```python
-from skyvern_client import SkyvernCloud
+from skyvern_lite import SkyvernCloud
 
 client = SkyvernCloud(api_key="your-api-key")  # or set SKYVERN_API_KEY env var
 
@@ -49,7 +49,7 @@ with client.sessions.create() as session:
 ### Async
 
 ```python
-from skyvern_client import AsyncSkyvernCloud
+from skyvern_lite import AsyncSkyvernCloud
 
 async with AsyncSkyvernCloud(api_key="your-api-key") as client:
     session = await client.sessions.create()
@@ -163,8 +163,8 @@ CloudBrowserError
 ### Backward Compatibility
 
 ```python
-from skyvern_client import Skyvern       # alias for SkyvernCloud
-from skyvern_client import AsyncSkyvern  # alias for AsyncSkyvernCloud
+from skyvern_lite import Skyvern       # alias for SkyvernCloud
+from skyvern_lite import AsyncSkyvern  # alias for AsyncSkyvernCloud
 ```
 
 ## License

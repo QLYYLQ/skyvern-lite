@@ -7,12 +7,12 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from skyvern_client._http import (
+from skyvern_lite._http import (
     SyncHttpClient,
     _parse_retry_after,
     _raise_for_status,
 )
-from skyvern_client.exceptions import (
+from skyvern_lite.exceptions import (
     AuthenticationError,
     CloudBrowserError,
     NetworkError,
@@ -135,7 +135,7 @@ class TestSyncHttpClient:
             client._client,
             "request",
             side_effect=[fail_resp, ok_resp],
-        ), patch("skyvern_client._http.time.sleep"):
+        ), patch("skyvern_lite._http.time.sleep"):
             result = client.request("GET", "/test")
 
         assert result == {"ok": True}
@@ -200,7 +200,7 @@ class TestSyncHttpClient:
             client._client,
             "request",
             side_effect=[fail_resp, ok_resp],
-        ), patch("skyvern_client._http.time.sleep") as mock_sleep:
+        ), patch("skyvern_lite._http.time.sleep") as mock_sleep:
             result = client.request("GET", "/test")
 
         assert result == {"ok": True}
@@ -219,7 +219,7 @@ class TestSyncHttpClient:
             client._client,
             "request",
             side_effect=[httpx.TimeoutException("timeout"), ok_resp],
-        ), patch("skyvern_client._http.time.sleep"):
+        ), patch("skyvern_lite._http.time.sleep"):
             result = client.request("GET", "/test")
 
         assert result == {"ok": True}

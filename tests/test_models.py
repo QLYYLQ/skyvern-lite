@@ -2,7 +2,7 @@
 
 import pytest
 
-from skyvern_client.models import (
+from skyvern_lite.models import (
     COUNTRY_TO_PROXY_LOCATION,
     ContextAttach,
     FingerprintConfig,

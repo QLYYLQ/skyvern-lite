@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from skyvern_client import AsyncSkyvernCloud, SkyvernCloud
-from skyvern_client.sessions import AsyncSessionsResource, SessionsResource
+from skyvern_lite import AsyncSkyvernCloud, SkyvernCloud
+from skyvern_lite.sessions import AsyncSessionsResource, SessionsResource
 
 
 class TestSkyvernCloud:
@@ -78,9 +78,9 @@ class TestAsyncSkyvernCloud:
 
 class TestBackwardCompatibility:
     def test_skyvern_alias(self):
-        from skyvern_client import Skyvern
+        from skyvern_lite import Skyvern
         assert Skyvern is SkyvernCloud
 
     def test_async_skyvern_alias(self):
-        from skyvern_client import AsyncSkyvern
+        from skyvern_lite import AsyncSkyvern
         assert AsyncSkyvern is AsyncSkyvernCloud

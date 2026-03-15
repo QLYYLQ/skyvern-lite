@@ -6,9 +6,9 @@ from typing import Any
 
 import pytest
 
-from skyvern_client.exceptions import SessionNotFoundError, TimeoutError
-from skyvern_client.models import ManagedProxyConfig, ProxyConfig
-from skyvern_client.sessions import SessionsResource, _build_create_body, _to_session_info
+from skyvern_lite.exceptions import SessionNotFoundError, TimeoutError
+from skyvern_lite.models import ManagedProxyConfig, ProxyConfig
+from skyvern_lite.sessions import SessionsResource, _build_create_body, _to_session_info
 
 from .conftest import SAMPLE_SESSION_RESPONSE, FakeAsyncHttp, FakeSyncHttp
 
@@ -97,7 +97,7 @@ class TestSessionsResourceCreate:
         sessions = SessionsResource(http)
 
         import unittest.mock
-        with unittest.mock.patch("skyvern_client.sessions.time.sleep"):
+        with unittest.mock.patch("skyvern_lite.sessions.time.sleep"):
             info = sessions.create()
 
         assert info.cdp_url == "wss://browser.skyvern.com/devtools/browser/abc"
@@ -167,7 +167,7 @@ class TestSessionsResourceDelete:
 class TestAsyncSessionsResource:
     @pytest.mark.asyncio
     async def test_create(self, sample_response: dict[str, Any]):
-        from skyvern_client.sessions import AsyncSessionsResource
+        from skyvern_lite.sessions import AsyncSessionsResource
 
         http = FakeAsyncHttp(responses={
             "POST /v1/browser_sessions": sample_response,
@@ -178,7 +178,7 @@ class TestAsyncSessionsResource:
 
     @pytest.mark.asyncio
     async def test_get(self, sample_response: dict[str, Any]):
-        from skyvern_client.sessions import AsyncSessionsResource
+        from skyvern_lite.sessions import AsyncSessionsResource
 
         http = FakeAsyncHttp(responses={
             "GET /v1/browser_sessions/sess-123": sample_response,
@@ -189,7 +189,7 @@ class TestAsyncSessionsResource:
 
     @pytest.mark.asyncio
     async def test_delete_idempotent(self):
-        from skyvern_client.sessions import AsyncSessionsResource
+        from skyvern_lite.sessions import AsyncSessionsResource
 
         http = FakeAsyncHttp(responses={
             "POST /v1/browser_sessions/sess-123/close": SessionNotFoundError("gone"),
@@ -199,7 +199,7 @@ class TestAsyncSessionsResource:
 
     @pytest.mark.asyncio
     async def test_list(self, sample_response: dict[str, Any]):
-        from skyvern_client.sessions import AsyncSessionsResource
+        from skyvern_lite.sessions import AsyncSessionsResource
 
         http = FakeAsyncHttp(responses={
             "GET /v1/browser_sessions": [sample_response],

@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from skyvern_client._http import AsyncHttpClient, SyncHttpClient
-from skyvern_client.sessions import AsyncSessionsResource, SessionsResource
+from skyvern_lite._http import AsyncHttpClient, SyncHttpClient
+from skyvern_lite.sessions import AsyncSessionsResource, SessionsResource
 
 
 class FakeSyncHttp:

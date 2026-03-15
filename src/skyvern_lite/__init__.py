@@ -4,7 +4,7 @@ Quick Start
 -----------
 ::
 
-    from skyvern_client import SkyvernCloud
+    from skyvern_lite import SkyvernCloud
 
     client = SkyvernCloud(api_key="sk-...")  # or set SKYVERN_API_KEY env var
 
